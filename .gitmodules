@@ -1,0 +1,6 @@
+[submodule "XD"]
+	path = XD
+	url = https://github.com/majestrate/XD.git
+[submodule "app/src/main/java/com/livingstonei2p/XDAndroid/iniedotr/inieditor-java"]
+	path = app/src/main/java/com/livingstonei2p/XDAndroid/iniedotr/inieditor-java
+	url = https://github.com/nikhaldi/inieditor-java.git
