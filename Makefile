@@ -3,8 +3,9 @@ all: preinit createXD gradlew xd.apk
 preinit:
 	git submodule update --init --recursive
 createXD:
-	cd XD && ./release.sh || true
-	cp XD/XD--*arm app/src/main/assets/XD
+#	cd XD && ./release.sh || true
+#	cp XD/XD--*arm app/src/main/assets/XD
+	./compileXD.sh
 gradlew:
 	./gradlew assembleDebug
 xd.apk:
