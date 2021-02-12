@@ -32,56 +32,59 @@ public class MainActivity2 extends AppCompatActivity {
     public static String logXdBuf = new String();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        Log.d("DEBUG","On Create");
+        try {
+            super.onCreate(savedInstanceState);
+            Log.d("DEBUG", "On Create");
 
-        while(xd == null) {
-            Log.d("DEBUG","Main activity2, not found xd");
-            xd = MainActivity.xd;
-        }
-        LogXd = new BufferedReader(new InputStreamReader(xd.getInputStream()));
-        Log.d("DEBUG","LogXd is inited");
-        setContentView(R.layout.activity_main2);
-
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                WebView webView = findViewById(R.id.WebView);
-                //   webView.setVisibility(View.VISIBLE);
-                webView.getSettings().setJavaScriptEnabled(true);
-                webView.setWebViewClient(new WebViewClient());
-                webView.loadUrl("http://127.0.0.1:1776/");
-
+            while (xd == null) {
+                Log.d("DEBUG", "Main activity2, not found xd");
+                xd = MainActivity.xd;
             }
-        });
-        DrawerLayout drawer = findViewById(R.id.drawer_layout);
-        NavigationView navigationView = findViewById(R.id.nav_view);
-        logger = new Thread(new Runnable() {
-            public void run() {
-                // a potentially time consuming task
-                TextView lg = findViewById(R.id.LogEditText);
-                lg.setText(logXdBuf);
-                while(true) {
-                    try {
-                        logXdBuf += LogXd.readLine()+"\n";
-                        if (logXdBuf.length() > 3000) logXdBuf=
-                                logXdBuf.substring(1000,3000);
-                        lg.setText(logXdBuf);
-                        Log.d("DEBUG", "logedittext was changed"+lg.getText());
-                    } catch (IOException exception) {
-                        lg.setText(exception.toString());
-                    } catch( Throwable  exception ){
-                        lg.setText(exception.toString());
+            LogXd = new BufferedReader(new InputStreamReader(xd.getInputStream()));
+            Log.d("DEBUG", "LogXd is inited");
+            setContentView(R.layout.activity_main2);
 
+            Toolbar toolbar = findViewById(R.id.toolbar);
+            setSupportActionBar(toolbar);
+            FloatingActionButton fab = findViewById(R.id.fab);
+            fab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    WebView webView = findViewById(R.id.WebView);
+                    //   webView.setVisibility(View.VISIBLE);
+                    webView.getSettings().setJavaScriptEnabled(true);
+                    webView.setWebViewClient(new WebViewClient());
+                    webView.loadUrl("http://127.0.0.1:1776/");
+
+                }
+            });
+            DrawerLayout drawer = findViewById(R.id.drawer_layout);
+            NavigationView navigationView = findViewById(R.id.nav_view);
+            logger = new Thread(new Runnable() {
+                public void run() {
+                    // a potentially time consuming task
+                    TextView lg = findViewById(R.id.LogEditText);
+                    lg.setText(logXdBuf);
+                    while (true) {
+                        try {
+                            logXdBuf += LogXd.readLine() + "\n";
+                            if (logXdBuf.length() > 3000) logXdBuf =
+                                    logXdBuf.substring(1000, 3000);
+                            lg.setText(logXdBuf);
+                            Log.d("DEBUG", "logedittext was changed" + lg.getText());
+                        } catch (IOException exception) {
+                            lg.setText(exception.toString());
+                        } catch (Throwable exception) {
+                            lg.setText(exception.toString());
+
+                        }
                     }
                 }
-            }
-        });
-        logger.start();
-
+            });
+            logger.start();
+        }catch(Throwable e){
+            logXdBuf=e.toString();
+        }
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
       /*  mAppBarConfiguration = new AppBarConfiguration.Builder(

@@ -11,6 +11,7 @@ import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.widget.TextView;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -28,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
             "/XDWorkDirectory";
     public static String PathFiles;
     public static Process xd=null;
-
+    private static TextView errorText;
 // maybe to another class?
     public static Process runXD(){
         try {
@@ -39,99 +40,112 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             Log.d("ERROR",":");
             e.printStackTrace();
+            errorText.setText(e.toString());
         }catch (Throwable e) {
             Log.d("ERROR",":");
             e.printStackTrace();
+            errorText.setText(e.toString());
         }
         return null;
     }
     public static Process restartXD(){
-        MainActivity.xd.destroy();
+	if(MainActivity.xd != null)
+        	MainActivity.xd.destroy();
         MainActivity.xd = runXD();
         return MainActivity.xd;
     }
     Process initXD(){
-        ContextWrapper c = new ContextWrapper(this);
+        try {
+            ContextWrapper c = new ContextWrapper(this);
 //        TextView text = findViewById(R.id.Text);
 //      text.setText(c.getFilesDir().getPath());
-        AssetManager am = this.getApplicationContext().getAssets();
-        do {
-            try {
-                File dir = new File(WorkDirectory+"/");
-                if (!dir.exists()){
-                    Log.d("DEBUG","Create work directory");
-                    if( !dir.mkdirs()) {
-                        Log.d("ERROR", "create directory is fail, "+WorkDirectory);
+            AssetManager am = this.getApplicationContext().getAssets();
+            do {
+                try {
+                    File dir = new File(WorkDirectory + "/");
+                    if (!dir.exists()) {
+                        Log.d("DEBUG", "Create work directory");
+                        if (!dir.mkdirs()) {
+                            Log.d("ERROR", "create directory is fail, " + WorkDirectory);
+                        }
+                    } else System.out.println("Directory is exist");
+                    InputStream in = am.open("XD");
+                    PathFiles = c.getFilesDir().getPath();
+                    File outFile = new File(PathFiles + "/XD");
+                    if (outFile.exists()) {
+                        outFile.setExecutable(true);
+                        IniEditor ini = new IniEditor();
+                        ini.load(c.getFilesDir().getPath() + "/torrents.ini");
+                        ini.set("storage", "rootdir", WorkDirectory);
+                        ini.set("storage", "downloads", WorkDirectory + "/downloads");
+                        ini.set("storage", "completed", WorkDirectory + "/seeding");
+                        ini.save(c.getFilesDir().getPath() + "/torrents.ini");
+                        break;
                     }
-                }else System.out.println("Directory is exist");
-                InputStream in = am.open("XD");
-                PathFiles=c.getFilesDir().getPath();
-                File outFile = new File(PathFiles + "/XD");
-                if (outFile.exists()) {
+                    OutputStream out = new FileOutputStream(outFile);
+                    byte[] buf = new byte[1024];
+                    int len;
+                    while ((len = in.read(buf)) > 0) {
+                        out.write(buf, 0, len);
+                    }
                     outFile.setExecutable(true);
-                    IniEditor ini = new IniEditor();
-                    ini.load(c.getFilesDir().getPath()+"/torrents.ini");
-                    ini.set("storage","rootdir", WorkDirectory);
-                    ini.set("storage","downloads", WorkDirectory+"/downloads");
-                    ini.set("storage","completed", WorkDirectory+"/seeding");
-                    ini.save(c.getFilesDir().getPath()+"/torrents.ini");
-                    break;
+                    restartXD();
+                } catch (IOException exception) {
+                    exception.printStackTrace();
                 }
-                OutputStream out = new FileOutputStream(outFile);
-                byte[] buf = new byte[1024];
-                int len;
-                while ((len = in.read(buf)) > 0) {
-                    out.write(buf, 0, len);
-                }
-                outFile.setExecutable(true);
-                restartXD();
-            } catch (IOException exception) {
-                exception.printStackTrace();
-            }
-        }while(false);
-        return runXD();
+            } while (false);
+            return runXD();
+        }catch(Throwable e){
+            errorText.setText(e.toString());
+            return null;
+        }
     }
 //end xd
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        if (
-                ActivityCompat.checkSelfPermission( this,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE )
-                != PackageManager.PERMISSION_GRANTED)
-        {
-            ActivityCompat.requestPermissions(MainActivity.this,
-                    new String[]{
-                            Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    1);
-            ActivityCompat.requestPermissions(MainActivity.this,
-                    new String[]{
-                            Manifest.permission.READ_EXTERNAL_STORAGE},
-                    1);
-            ActivityCompat.requestPermissions(MainActivity.this,
-                    new String[]{
-                            Manifest.permission.INTERNET},
-                    1);
-            ActivityCompat.requestPermissions(MainActivity.this,
-                    new String[]{
-                            Manifest.permission.ACCESS_NETWORK_STATE},
-                    1);
-        }
-
-
-        xd = initXD();
-        if(xd == null)
-        {
-            Log.d("XD-Activity","Cant start app");
-            try {
-                wait(15);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        errorText = findViewById(R.id.errorText);
+        try {
+            if (
+                    ActivityCompat.checkSelfPermission(this,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                            != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        1);
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{
+                                Manifest.permission.READ_EXTERNAL_STORAGE},
+                        1);
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{
+                                Manifest.permission.INTERNET},
+                        1);
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{
+                                Manifest.permission.ACCESS_NETWORK_STATE},
+                        1);
             }
-            this.finishAffinity();
+
+
+            xd = initXD();
+            if (xd == null) {
+                Log.d("XD-Activity", "Cant start app");
+                restartXD();
+                try {
+                    wait(15);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                //this.finishAffinity();
+            } else {
+                Intent intent = new Intent(this, MainActivity2.class);
+                startActivity(intent);
+            }
+        }catch(Throwable e){
+            errorText.setText(e.toString());
         }
-        Intent intent = new Intent(this, MainActivity2.class);
-        startActivity(intent);
     }
 }
