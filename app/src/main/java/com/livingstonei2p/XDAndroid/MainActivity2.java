@@ -1,17 +1,23 @@
 package com.livingstonei2p.XDAndroid;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
 
+import androidx.annotation.Nullable;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -24,12 +30,37 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import lib.folderpicker.FolderPicker;
+
 public class MainActivity2 extends AppCompatActivity {
     private Thread logger;
     private AppBarConfiguration mAppBarConfiguration;
     private BufferedReader LogXd;
     private Process xd=null;
     public static String logXdBuf = new String();
+    private Intent intent_folderChooser;
+    private final int FOLDERPICKER_CODE = 50;
+    private Toolbar mToolBar;
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == FOLDERPICKER_CODE && resultCode == Activity.RESULT_OK) {
+
+            String folderLocation = data.getExtras().getString("data");
+            Log.i( "folderLocation", folderLocation );
+            try {
+                MainActivity.updateWorkDirectory(folderLocation);
+                Toast.makeText(this,"Please restart the app", Toast.LENGTH_LONG).show();
+
+              //  ProcessPhoenix.triggerRebirth(this.getBaseContext());
+            }catch(Exception er){
+                Toast.makeText(this,"Cant select directory!"+er.toString()
+                        , Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         try {
@@ -81,6 +112,24 @@ public class MainActivity2 extends AppCompatActivity {
                     }
                 }
             });
+            mToolBar = (Toolbar) findViewById(R.id.toolbar);
+            setSupportActionBar(mToolBar);
+            intent_folderChooser = new Intent(this, FolderPicker.class);
+            Log.d("XDMenu","Init on Menu Item Click Listener");
+            mToolBar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+
+                @Override
+                public boolean onMenuItemClick(MenuItem item) {
+
+                    if (item.getItemId() == R.id.action_settings) {
+                        Log.d("XDMenu", "FoolderChooser");
+                        startActivityForResult(intent_folderChooser, FOLDERPICKER_CODE);
+
+                    }
+                    return false;
+                }
+            });
+
             logger.start();
         }catch(Throwable e){
             logXdBuf=e.toString();

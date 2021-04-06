@@ -15,7 +15,9 @@ import android.widget.TextView;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -30,7 +32,9 @@ public class MainActivity extends AppCompatActivity {
     public static String PathFiles;
     public static Process xd=null;
     private static TextView errorText;
-// maybe to another class?
+    private File workDirectoryFile;
+    private ContextWrapper c;
+    // maybe to another class?
     public static Process runXD(){
         try {
             Runtime.getRuntime().exec("chmod 7777 "+PathFiles+"/XD");
@@ -56,7 +60,8 @@ public class MainActivity extends AppCompatActivity {
     }
     Process initXD(){
         try {
-            ContextWrapper c = new ContextWrapper(this);
+            Log.d("initXD","XD init");
+
 //        TextView text = findViewById(R.id.Text);
 //      text.setText(c.getFilesDir().getPath());
             AssetManager am = this.getApplicationContext().getAssets();
@@ -68,9 +73,8 @@ public class MainActivity extends AppCompatActivity {
                         if (!dir.mkdirs()) {
                             Log.d("ERROR", "create directory is fail, " + WorkDirectory);
                         }
-                    } else System.out.println("Directory is exist");
+                    } else System.out.println("Directory is exist: "+WorkDirectory);
                     InputStream in = am.open("XD");
-                    PathFiles = c.getFilesDir().getPath();
                     File outFile = new File(PathFiles + "/XD");
                     if (outFile.exists()) {
                         outFile.setExecutable(true);
@@ -101,6 +105,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 //end xd
+    public static void updateWorkDirectory(String nWorkDirectory) throws IOException {
+        //toDo: normalSettings
+        File workDirecotryFile = new File(PathFiles + "/workDirectoryPathFile");
+        if(workDirecotryFile.exists()) workDirecotryFile.delete();
+        workDirecotryFile.createNewFile();
+        workDirecotryFile.setWritable(true);
+        OutputStream out = new FileOutputStream(workDirecotryFile);
+        out.write( nWorkDirectory.getBytes() , 0, nWorkDirectory.length() );
+        out.close();
+    }
+    //toDo: normal settings
+    public String getWorkDirectory() throws FileNotFoundException {
+        File workDirecotryFile = new File(c.getFilesDir().getPath() + "/workDirectoryPathFile");
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(workDirecotryFile));
+            return reader.readLine();
+        }catch(Exception e){
+            return WorkDirectory;//toDo: normal settings
+        }
+
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -128,9 +153,14 @@ public class MainActivity extends AppCompatActivity {
                                 Manifest.permission.ACCESS_NETWORK_STATE},
                         1);
             }
-
+            c = new ContextWrapper(this);
+            PathFiles = c.getFilesDir().getPath();
+            WorkDirectory = getWorkDirectory();
+            Log.d("XDAndroid","XD init");
 
             xd = initXD();
+            Log.d("XDAndroid","XD inited");
+
             if (xd == null) {
                 Log.d("XD-Activity", "Cant start app");
                 restartXD();
@@ -141,11 +171,13 @@ public class MainActivity extends AppCompatActivity {
                 }
                 //this.finishAffinity();
             } else {
+                Log.d("XDAndroid","Start activity 2");
                 Intent intent = new Intent(this, MainActivity2.class);
                 startActivity(intent);
             }
         }catch(Throwable e){
             errorText.setText(e.toString());
+            Log.d("errorXD",e.toString());
         }
     }
 }
